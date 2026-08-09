@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Wajub</RootNamespace>
+    <AssemblyName>Wajub</AssemblyName>
+    <Version>1.1.0</Version>
+    <Authors>Wajub</Authors>
+    <Description>Official server-side Wajub SDK for .NET</Description>
+    <PackageTags>wajub;payments;api;sdk</PackageTags>
+    <LangVersion>latest</LangVersion>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/wajubhq/wajub-csharp</RepositoryUrl>
+    <PackageProjectUrl>https://docs.wajub.com/libraries/sdks</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Wajub.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>
