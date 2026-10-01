@@ -133,27 +133,6 @@ public class ClientTests
     }
 
     [Fact]
-    public async Task PaymentsInitialize_Alias()
-    {
-        var (httpClient, _) = TestFixtures.CreateTestClient([
-            _ => (200, new Dictionary<string, object?>
-            {
-                ["transaction"] = new Dictionary<string, object?> { ["id"] = "pay_456" },
-                ["authorization_url"] = "https://checkout.test/pay/pay_456",
-            }),
-        ]);
-
-        var client = TestFixtures.CreateWajubClient(httpClient);
-        var payment = await client.Payments.InitializeAsync(new Dictionary<string, object?>
-        {
-            ["amount"] = 1000,
-            ["currency"] = "XAF",
-        });
-
-        Assert.Equal("pay_456", payment.Id);
-    }
-
-    [Fact]
     public async Task PaymentsList_Pagination()
     {
         var (httpClient, _) = TestFixtures.CreateTestClient([

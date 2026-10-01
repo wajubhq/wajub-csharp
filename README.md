@@ -134,7 +134,7 @@ var client = WajubClient.Create(new WajubConfig
 | Service | Methods |
 |---------|---------|
 | `client.Global` | `PingAsync`, `ChannelsAsync`, `CountriesAsync`, `CurrenciesAsync` |
-| `client.Payments` | `CreateAsync`, `InitializeAsync`, `RetrieveAsync`, `ListAsync`, `CancelAsync`, `ProcessAsync`, `ProcessSplitAsync`, `ListRefundsAsync` |
+| `client.Payments` | `CreateAsync`, `RetrieveAsync`, `ListAsync`, `CancelAsync`, `ProcessAsync`, `ProcessSplitAsync`, `ListRefundsAsync` |
 | `client.Customers` | `CreateAsync`, `RetrieveAsync`, `UpdateAsync`, `DeleteAsync`, `ListAsync`, `BlockAsync`, `UnblockAsync`, `ActivateAsync`, `DeactivateAsync`, `ListTaxIdsAsync`, `CreateTaxIdAsync`, `DeleteTaxIdAsync` |
 | `client.Refunds` | `CreateAsync`, `RetrieveAsync`, `ListAsync` |
 | `client.Transfers` | `CreateAsync`, `RetrieveAsync`, `ListAsync` |

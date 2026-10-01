@@ -16,12 +16,6 @@ public class PaymentsService
         return Payment.Parse(response);
     }
 
-    public Task<Payment> InitializeAsync(
-        Dictionary<string, object?> parameters,
-        RequestOptions? options = null,
-        CancellationToken cancellationToken = default)
-        => CreateAsync(parameters, options, cancellationToken);
-
     public async Task<Payment> RetrieveAsync(string id, CancellationToken cancellationToken = default)
     {
         var response = await Base.GetAsync($"/payments/{id}", cancellationToken: cancellationToken);
