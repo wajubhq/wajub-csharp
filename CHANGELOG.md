@@ -7,7 +7,10 @@ The package uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
-## [1.2.1] — 2026-10-12
+## [2.0.0] — 2026-10-12
+
+A major version: `Webhooks.ConstructEvent` returns plain values instead of
+`JsonElement`, which breaks code that read the old values (see below).
 
 ### Changed
 - **`Webhooks.ConstructEvent` returns plain values.** The event used to hold
@@ -30,7 +33,7 @@ The package uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.2.0] — 2026-10-01
 
-Tagged, never published to NuGet. Its change ships with 1.2.1.
+Tagged, never published to NuGet. Its change ships with 2.0.0.
 
 ### Removed
 - `Payments.InitializeAsync`, an alias of `Payments.CreateAsync`. Call `CreateAsync`.
