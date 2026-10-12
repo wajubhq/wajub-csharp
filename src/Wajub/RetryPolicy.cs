@@ -22,6 +22,26 @@ internal static class RetryPolicy
         return TimeSpan.FromMilliseconds(500 * (1 << (attempt - 1)));
     }
 
+    /// <summary>
+    /// Whether the API answered the 409 it sends while a request with the same
+    /// Idempotency-Key is still running (<c>errors.idempotency_key</c>). A call
+    /// sent again after a timeout can arrive before the first one has finished:
+    /// its answer is on the way, so the call is worth repeating with the same
+    /// key. Every other 409 is a real refusal.
+    /// </summary>
+    public static bool IsIdempotencyKeyInProgress(int status, Dictionary<string, object?> body)
+    {
+        if (status != 409 || !body.TryGetValue("errors", out var errors))
+        {
+            return false;
+        }
+
+        return JsonUtils.AsDictionary(errors)?.ContainsKey("idempotency_key") ?? false;
+    }
+
+    /// <summary>The pause before asking again about a key still being processed: 2, 4, then 8 seconds.</summary>
+    public static TimeSpan IdempotencyConflictDelay(int attempt) => TimeSpan.FromSeconds(1 << Math.Max(1, attempt));
+
     public static TimeSpan ParseRetryAfter(HttpResponseMessage response)
     {
         if (!response.Headers.TryGetValues("Retry-After", out var values))

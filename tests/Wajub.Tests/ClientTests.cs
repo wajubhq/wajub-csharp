@@ -218,6 +218,50 @@ public class ClientTests
     }
 
     [Fact]
+    public async Task RetriesA409ForAnIdempotencyKeyStillBeingProcessed()
+    {
+        // A call sent again after a timeout can reach the API while the first
+        // one is still running: the answer is on its way, so ask again.
+        const string message = "A request with this Idempotency-Key is still being processed.";
+        var (httpClient, recorded) = TestFixtures.CreateTestClient([
+            _ => (409, new Dictionary<string, object?>
+            {
+                ["message"] = message,
+                ["errors"] = new Dictionary<string, object?> { ["idempotency_key"] = new[] { message } },
+            }),
+            _ => (201, new Dictionary<string, object?> { ["transaction"] = new Dictionary<string, object?> { ["id"] = "trx_1" } }),
+        ]);
+
+        var client = TestFixtures.CreateWajubClient(httpClient);
+        await client.Payments.CreateAsync(
+            new Dictionary<string, object?> { ["amount"] = 1000 },
+            new RequestOptions { IdempotencyKey = "ORDER-42" });
+
+        Assert.Equal(["ORDER-42", "ORDER-42"], recorded.IdempotencyKeyAttempts);
+        Assert.Equal(TimeSpan.FromSeconds(2), RetryPolicy.IdempotencyConflictDelay(1));
+        Assert.Equal(TimeSpan.FromSeconds(4), RetryPolicy.IdempotencyConflictDelay(2));
+    }
+
+    [Fact]
+    public async Task RaisesAnyOther409AtOnce()
+    {
+        var (httpClient, recorded) = TestFixtures.CreateTestClient([
+            _ => (409, new Dictionary<string, object?>
+            {
+                ["error_code"] = "payment_in_progress",
+                ["message"] = "A charge is already in progress.",
+            }),
+            _ => (200, new Dictionary<string, object?> { ["ok"] = true }),
+        ]);
+
+        var client = TestFixtures.CreateWajubClient(httpClient);
+
+        await Assert.ThrowsAnyAsync<WajubError>(() =>
+            client.Payments.ProcessAsync("trx_1", new Dictionary<string, object?> { ["channel"] = "cm.mtn" }));
+        Assert.Single(recorded.IdempotencyKeyAttempts);
+    }
+
+    [Fact]
     public void PickListAndNormalizeApiKey()
     {
         var (data, meta) = JsonUtils.PickList(new Dictionary<string, object?>

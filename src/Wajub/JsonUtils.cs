@@ -151,6 +151,34 @@ internal static partial class JsonUtils
         return dict;
     }
 
+    /// <summary>An object as plain .NET values, recursively (see <see cref="ToPlainValue"/>).</summary>
+    public static Dictionary<string, object?> ToPlainDictionary(JsonElement element)
+    {
+        var dict = new Dictionary<string, object?>();
+        foreach (var property in element.EnumerateObject())
+        {
+            dict[property.Name] = ToPlainValue(property.Value);
+        }
+
+        return dict;
+    }
+
+    /// <summary>
+    /// A JSON value as a plain .NET value: string, long (or double when it is not an
+    /// integer), bool, null, Dictionary&lt;string, object?&gt; or List&lt;object?&gt;.
+    /// </summary>
+    public static object? ToPlainValue(JsonElement element) => element.ValueKind switch
+    {
+        JsonValueKind.Object => ToPlainDictionary(element),
+        JsonValueKind.Array => element.EnumerateArray().Select(ToPlainValue).ToList(),
+        JsonValueKind.String => element.GetString(),
+        // Boxed apart: one conditional would widen the long to a double.
+        JsonValueKind.Number => element.TryGetInt64(out var integer) ? (object)integer : element.GetDouble(),
+        JsonValueKind.True => true,
+        JsonValueKind.False => false,
+        _ => null,
+    };
+
     public static bool TryGetString(Dictionary<string, object?> body, string key, out string? value)
     {
         value = null;

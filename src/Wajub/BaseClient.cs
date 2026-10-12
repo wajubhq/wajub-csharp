@@ -166,6 +166,17 @@ internal sealed class BaseClient : IDisposable
                     continue;
                 }
 
+                // The same key still being processed: the first request's answer
+                // is coming. Asked again with the same key, the API returns it.
+                if (!string.IsNullOrEmpty(idempotencyKey)
+                    && RetryPolicy.IsIdempotencyKeyInProgress((int)response.StatusCode, parsed)
+                    && attempt < RetryPolicy.MaxRetries)
+                {
+                    await Task.Delay(RetryPolicy.IdempotencyConflictDelay(attempt + 1), cancellationToken);
+                    attempt++;
+                    continue;
+                }
+
                 var retryAfter = (int)RetryPolicy.ParseRetryAfter(response).TotalSeconds;
                 throw ErrorFactory.FromResponse((int)response.StatusCode, parsed, retryAfter);
             }

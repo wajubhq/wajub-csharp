@@ -13,7 +13,8 @@ Use **[Wajub.js](https://docs.wajub.com/libraries/components/js)** for embedded 
 - Resource-oriented API (`client.Payments`, `client.Customers`, …)
 - Automatic `Idempotency-Key` on mutating requests (override per call)
 - Typed errors per HTTP status (`AuthenticationError`, `RateLimitError`, …)
-- Automatic retries on 429 and 5xx (max 2, exponential backoff)
+- Automatic retries on 429, 5xx and network errors (max 2, exponential backoff), with the same `Idempotency-Key`
+- A `409` for an `Idempotency-Key` still being processed is retried with the same key (after 2 then 4 s)
 - Page-based pagination with `AutoPagingIterAsync` and `GetNextPageAsync`
 - Webhook signature verification (HMAC-SHA256, timestamp tolerance)
 
@@ -166,7 +167,7 @@ var eventPayload = client.Webhooks.ConstructEvent(
     Request.Headers["X-Wajub-Signature"],
     Request.Headers["X-Wajub-Timestamp"]);
 
-if (eventPayload["type"]?.ToString() == "payment.succeeded")
+if (eventPayload["event"] as string == "payment.succeeded")
 {
     // fulfill order
 }

@@ -9,16 +9,27 @@ public class Webhooks
 
     private static readonly TimeSpan DefaultWebhookTolerance = TimeSpan.FromSeconds(300);
 
-    /// <summary>Verifies X-Wajub-Signature and parses the event payload.</summary>
+    /// <summary>
+    /// Verifies X-Wajub-Signature and parses the event payload. Values come back as
+    /// plain .NET values: <c>string</c>, <c>long</c> or <c>double</c>, <c>bool</c>,
+    /// <c>null</c>, a nested <c>Dictionary&lt;string, object?&gt;</c> or a
+    /// <c>List&lt;object?&gt;</c>, so <c>evt["event"] as string</c> reads the type. A
+    /// missing signature or timestamp header is a <see cref="WebhookSignatureVerificationError"/>.
+    /// </summary>
     public Dictionary<string, object?> ConstructEvent(
         ReadOnlySpan<byte> payload,
-        string signature,
-        string timestamp,
+        string? signature,
+        string? timestamp,
         TimeSpan tolerance = default)
     {
         if (string.IsNullOrEmpty(Secret))
         {
             throw new InvalidOperationException("wajub: webhook secret is required for ConstructEvent");
+        }
+
+        if (string.IsNullOrEmpty(signature) || string.IsNullOrEmpty(timestamp))
+        {
+            throw new WebhookSignatureVerificationError("Missing X-Wajub-Signature or X-Wajub-Timestamp header.");
         }
 
         if (!signature.StartsWith("v1=", StringComparison.Ordinal))
@@ -54,8 +65,14 @@ public class Webhooks
 
         try
         {
-            return JsonSerializer.Deserialize<Dictionary<string, object?>>(body, JsonUtils.SerializerOptions)
-                ?? new Dictionary<string, object?>();
+            using var document = JsonDocument.Parse(body);
+            if (document.RootElement.ValueKind != JsonValueKind.Object)
+            {
+                throw new WebhookSignatureVerificationError("Invalid webhook payload JSON.");
+            }
+
+            // Plain values, not JsonElement: `evt["event"] as string` was always null.
+            return JsonUtils.ToPlainDictionary(document.RootElement);
         }
         catch (JsonException)
         {

@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <RootNamespace>Wajub</RootNamespace>
     <AssemblyName>Wajub</AssemblyName>
-    <Version>1.2.0</Version>
+    <Version>1.2.1</Version>
     <Authors>Wajub</Authors>
     <Description>Official server-side Wajub SDK for .NET</Description>
     <PackageTags>wajub;payments;api;sdk</PackageTags>
