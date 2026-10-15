@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
+using System.Text.Json;
 
 namespace Wajub.Tests;
 
@@ -165,16 +166,25 @@ public class ClientTests
         var (httpClient, recorded) = TestFixtures.CreateTestClient([
             _ => (200, new Dictionary<string, object?> { ["refund"] = new Dictionary<string, object?> { ["id"] = "ref_new" } }),
             _ => (200, new Dictionary<string, object?> { ["refund"] = new Dictionary<string, object?> { ["id"] = "ref_new", ["status"] = "pending" } }),
-            _ => (200, new Dictionary<string, object?>()),
+            _ => (200, new Dictionary<string, object?>
+            {
+                ["refunds"] = new[] { new Dictionary<string, object?> { ["id"] = "ref_new" } },
+                ["meta"] = new Dictionary<string, object?> { ["has_more"] = false },
+            }),
         ]);
 
         var client = TestFixtures.CreateWajubClient(httpClient);
 
         var created = await client.Refunds.CreateAsync(new Dictionary<string, object?>
         {
-            ["payment_id"] = "pay_1",
+            ["payment"] = "pay_1",
             ["amount"] = 500,
         });
+        using (var sent = JsonDocument.Parse(recorded.Bodies.Single()))
+        {
+            Assert.Equal("pay_1", sent.RootElement.GetProperty("payment").GetString());
+        }
+
         var refund = Refund.Parse(new Dictionary<string, object?> { ["refund"] = created });
         Assert.Equal("ref_new", refund.Id);
 
@@ -182,8 +192,10 @@ public class ClientTests
         var parsed = Refund.Parse(new Dictionary<string, object?> { ["refund"] = retrieved });
         Assert.Equal("pending", parsed.Status);
 
-        await client.Refunds.DeleteAsync("ref_new");
-        Assert.Equal(HttpMethod.Delete.Method, recorded.Method);
+        var listed = await client.Refunds.ListAsync();
+        Assert.Equal(HttpMethod.Get.Method, recorded.Method);
+        Assert.Equal("/refunds", recorded.Path);
+        Assert.Equal("ref_new", JsonUtils.ToStringValue(Assert.Single(listed.Data)["id"]));
     }
 
     [Fact]

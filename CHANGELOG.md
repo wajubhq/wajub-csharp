@@ -20,12 +20,17 @@ The package uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `422` can give a field several messages; `Errors` keeps only the first one.
   `e.FieldErrors["amount"]` lists them all, in the order the API gave them.
   `Errors` is unchanged.
+- **`Refund.Currency`**, the currency of the refund, such as `GHS`.
 
 ### Deprecated
 - **`Payment.Amount` and `Refund.Amount`.** They are `long` and drop the
   decimals: GHS 12.50 reads `12`. Code that reads them still compiles and gets
   the same value, with an obsolete warning (`CS0618`). Read `AmountDecimal`
   instead.
+- **`Refunds.UpdateAsync` and `Refunds.DeleteAsync`.** The API has no endpoint
+  to change or delete a refund, so both always throw a `WajubError` with
+  `HttpStatus` `405`. Don't call them; they will be removed in the next major
+  version.
 
 ### Fixed
 - **A decimal in a list filter is sent correctly whatever the culture.** Under

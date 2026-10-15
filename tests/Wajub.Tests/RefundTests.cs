@@ -37,7 +37,7 @@ public class RefundTests
         Assert.Equal("rfd_1", refund.Id);
         Assert.Equal("pending", refund.Status);
         Assert.Equal(12.5m, refund.AmountDecimal);
-        Assert.Equal("GHS", JsonUtils.ToStringValue(refund.Raw["currency"]));
+        Assert.Equal("GHS", refund.Currency);
     }
 
     [Fact]
@@ -75,6 +75,19 @@ public class RefundTests
 #pragma warning disable CS0618 // The deprecated Amount keeps the value it always had.
         Assert.Equal(7L, refund.Amount);
 #pragma warning restore CS0618
+    }
+
+    [Fact]
+    public async Task RefundCurrencyIsTheCurrencyOfTheRefund()
+    {
+        var (httpClient, _) = TestFixtures.CreateTestClient([
+            _ => (200, Json("""{"refund":{"id":"rfd_1","amount":15000,"currency":"XAF","status":"succeeded"}}""")),
+            _ => (200, Json("""{"refund":{"id":"rfd_2","amount":5,"status":"pending"}}""")),
+        ]);
+        var client = TestFixtures.CreateWajubClient(httpClient);
+
+        Assert.Equal("XAF", (await client.Payments.RetrieveRefundAsync("rfd_1")).Currency);
+        Assert.Equal(string.Empty, (await client.Payments.RetrieveRefundAsync("rfd_2")).Currency);
     }
 
     private static JsonElement Json(string json) => JsonDocument.Parse(json).RootElement.Clone();

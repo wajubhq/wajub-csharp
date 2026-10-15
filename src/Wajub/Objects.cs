@@ -102,6 +102,8 @@ public record Refund
     /// </summary>
     public decimal AmountDecimal { get; init; }
 
+    public string Currency { get; init; } = string.Empty;
+
     public Dictionary<string, object?> Raw { get; init; } = [];
 
     internal static Refund Parse(Dictionary<string, object?> body)
@@ -110,12 +112,14 @@ public record Refund
 
         JsonUtils.TryGetString(data, "id", out var id);
         JsonUtils.TryGetString(data, "status", out var status);
+        JsonUtils.TryGetString(data, "currency", out var currency);
         JsonUtils.TryGetDecimal(data.GetValueOrDefault("amount"), out var amount);
 
         return new Refund
         {
             Id = id ?? string.Empty,
             Status = status ?? string.Empty,
+            Currency = currency ?? string.Empty,
 #pragma warning disable CS0618 // Kept, deprecated, with the value it always had.
             Amount = JsonUtils.WholeUnits(amount),
 #pragma warning restore CS0618
