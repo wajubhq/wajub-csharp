@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Text;
 
@@ -85,7 +86,9 @@ internal sealed class BaseClient : IDisposable
             var builder = new UriBuilder(endpoint);
             var pairs = query
                 .Where(kvp => kvp.Value is not null)
-                .Select(kvp => $"{Uri.EscapeDataString(kvp.Key)}={Uri.EscapeDataString(kvp.Value!.ToString()!)}");
+                // Invariant: under a culture that writes 12,5 an amount would
+                // reach the API as "12,5".
+                .Select(kvp => $"{Uri.EscapeDataString(kvp.Key)}={Uri.EscapeDataString(Convert.ToString(kvp.Value, CultureInfo.InvariantCulture) ?? string.Empty)}");
             builder.Query = string.Join("&", pairs);
             endpoint = builder.Uri.ToString();
         }

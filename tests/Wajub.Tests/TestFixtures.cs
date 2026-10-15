@@ -20,6 +20,8 @@ internal sealed class RecordedRequest
     public string Query { get; set; } = string.Empty;
 
     public List<string> IdempotencyKeyAttempts { get; } = new();
+
+    public List<string> Bodies { get; } = new();
 }
 
 internal sealed class MockHttpMessageHandler : HttpMessageHandler
@@ -71,7 +73,7 @@ internal sealed class MockHttpMessageHandler : HttpMessageHandler
 
         if (request.Content is not null)
         {
-            await request.Content.ReadAsStringAsync(cancellationToken);
+            Last.Bodies.Add(await request.Content.ReadAsStringAsync(cancellationToken));
         }
 
         var status = 200;

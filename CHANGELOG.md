@@ -7,6 +7,31 @@ The package uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [2.1.0] — 2026-10-15
+
+### Added
+- **`Payment.AmountDecimal` and `Refund.AmountDecimal`, the amount with its
+  decimals.** The API sends amounts in the major unit of the currency, so
+  GHS 12.50 arrives as `12.5`. `AmountDecimal` is a `decimal` that keeps it
+  digit for digit: `12.5m` for GHS 12.50, `15000m` for XAF 15,000. An amount
+  sent as a string (`"12.50"`) reads the same. Put it back in a request as is,
+  for a refund for instance, and it goes out with its cents.
+
+### Deprecated
+- **`Payment.Amount` and `Refund.Amount`.** They are `long` and drop the
+  decimals: GHS 12.50 reads `12`. They still hold that value, so code that
+  reads them compiles and behaves as before, with an obsolete warning
+  (`CS0618`). Read `AmountDecimal` instead.
+
+### Fixed
+- **A decimal in a query parameter is written with a dot whatever the
+  culture.** Under a culture such as `fr-FR`, `["amount_min"] = 12.5m` on a
+  list went out as `12,5`. Query values are now written with the invariant
+  culture. Request bodies were not affected.
+- The README said amounts are passed in the smallest currency unit (cents).
+  The API reads them in the major unit: send `12.50` for GHS 12.50, not `1250`.
+  Zero-decimal currencies such as XAF and XOF are not affected.
+
 ## [2.0.0] — 2026-10-12
 
 A major version: `Webhooks.ConstructEvent` returns plain values instead of

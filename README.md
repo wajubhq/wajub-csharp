@@ -33,7 +33,10 @@ dotnet add package Wajub
 
 ## Quick start
 
-Amounts are passed in the **smallest currency unit** (e.g. cents for EUR/USD; whole francs for XAF).
+Amounts are in the **major unit** of the currency, the way the API reads and returns them:
+`15000` with `XAF` is fifteen thousand francs, and a currency with decimals takes a decimal,
+`12.50m` with `GHS`. A payment's amount, decimals included, is `payment.AmountDecimal`
+(`decimal`); `payment.Amount` drops the decimals and is obsolete.
 
 ### Redirect checkout
 
