@@ -184,9 +184,9 @@ try
 }
 catch (InvalidRequestError e)
 {
-    foreach (var (field, message) in e.Errors ?? new())
+    foreach (var (field, messages) in e.FieldErrors ?? new Dictionary<string, IReadOnlyList<string>>())
     {
-        Console.WriteLine($"{field}: {message}"); // field-level validation errors
+        Console.WriteLine($"{field}: {string.Join(" ", messages)}"); // every validation message, by field
     }
 }
 catch (AuthenticationError)
@@ -209,7 +209,7 @@ catch (WajubError e)
 | `WajubError` | Any other error status, and the parent of the classes above |
 | `ApiConnectionError` | No response: network error or timeout |
 
-Every error carries `Message`, `Code`, `HttpStatus`, `Errors` (the first message of each field) and `Raw` (the response body).
+Every error carries `Message`, `Code`, `HttpStatus`, `FieldErrors` (every validation message of each field), `Errors` (the first message of each field) and `Raw` (the response body).
 
 ## Testing
 

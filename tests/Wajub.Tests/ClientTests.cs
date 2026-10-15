@@ -318,4 +318,53 @@ public class ClientTests
         Assert.Equal(422, invalid.HttpStatus);
         Assert.Equal("Must be positive", invalid.Errors?["amount"]);
     }
+
+    [Fact]
+    public async Task InvalidRequestError_KeepsEveryMessageOfAField()
+    {
+        var (httpClient, _) = TestFixtures.CreateTestClient([
+            _ => (422, new Dictionary<string, object?>
+            {
+                ["message"] = "The given data was invalid.",
+                ["errors"] = new Dictionary<string, object?>
+                {
+                    ["amount"] = new[] { "The amount must be a number.", "The amount must be at least 1." },
+                    ["currency"] = new[] { "The currency field is required." },
+                    ["email"] = "The email is not valid.",
+                },
+            }),
+        ]);
+
+        var client = TestFixtures.CreateWajubClient(httpClient);
+        var ex = await Assert.ThrowsAsync<InvalidRequestError>(() =>
+            client.Payments.CreateAsync(new Dictionary<string, object?> { ["amount"] = "x" }));
+
+        Assert.NotNull(ex.FieldErrors);
+        Assert.Equal(["The amount must be a number.", "The amount must be at least 1."], ex.FieldErrors["amount"]);
+        Assert.Equal(["The currency field is required."], ex.FieldErrors["currency"]);
+        Assert.Equal(["The email is not valid."], ex.FieldErrors["email"]);
+
+        // Errors keeps the first message of each field, as before.
+        Assert.Equal("The amount must be a number.", ex.Errors?["amount"]);
+        Assert.Equal("The currency field is required.", ex.Errors?["currency"]);
+        Assert.Equal("The email is not valid.", ex.Errors?["email"]);
+    }
+
+    [Fact]
+    public void ErrorFromResponse_FieldErrorsOnEveryErrorType()
+    {
+        var body = new Dictionary<string, object?>
+        {
+            ["errors"] = new Dictionary<string, object?> { ["key"] = new[] { "First.", "Second." } },
+        };
+
+        foreach (var status in new[] { 400, 401, 403, 404, 422, 429, 500 })
+        {
+            var error = ErrorFactory.FromResponse(status, body, 0);
+            Assert.Equal(["First.", "Second."], error.FieldErrors?["key"]);
+            Assert.Equal("First.", error.Errors?["key"]);
+        }
+
+        Assert.Null(ErrorFactory.FromResponse(422, new Dictionary<string, object?> { ["message"] = "No fields" }, 0).FieldErrors);
+    }
 }

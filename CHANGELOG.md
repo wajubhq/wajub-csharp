@@ -16,6 +16,10 @@ The package uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `Refund`.** `RefundAsync` refunds a payment, in full or for the `amount` you
   pass; `RetrieveRefundAsync` reads a refund by its id. `Refunds.CreateAsync`,
   `RetrieveAsync` and `ListAsync` still return dictionaries.
+- **`FieldErrors` on API errors, every validation message of each field.** A
+  `422` can give a field several messages; `Errors` keeps only the first one.
+  `e.FieldErrors["amount"]` lists them all, in the order the API gave them.
+  `Errors` is unchanged.
 
 ### Deprecated
 - **`Payment.Amount` and `Refund.Amount`.** They are `long` and drop the
