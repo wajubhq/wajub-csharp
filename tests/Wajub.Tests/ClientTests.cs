@@ -199,6 +199,34 @@ public class ClientTests
     }
 
     [Fact]
+    public async Task LinksUpdateAndDelete()
+    {
+        var (httpClient, recorded) = TestFixtures.CreateTestClient([
+            _ => (200, new Dictionary<string, object?> { ["link"] = new Dictionary<string, object?> { ["id"] = "lnk_1", ["amount"] = 2500 } }),
+            _ => (200, new Dictionary<string, object?>()),
+        ]);
+
+        var client = TestFixtures.CreateWajubClient(httpClient);
+
+        var updated = await client.Links.UpdateAsync("lnk_1", new Dictionary<string, object?> { ["amount"] = 2500 });
+        Assert.Equal(HttpMethod.Put.Method, recorded.Method);
+        Assert.Equal("/links/lnk_1", recorded.Path);
+        using (var sent = JsonDocument.Parse(Assert.Single(recorded.Bodies)))
+        {
+            Assert.Equal(2500, sent.RootElement.GetProperty("amount").GetInt32());
+        }
+
+        Assert.Single(recorded.IdempotencyKeyValues[0]);
+        Assert.Equal("lnk_1", JsonUtils.ToStringValue(updated["id"]));
+
+        await client.Links.DeleteAsync("lnk_1");
+        Assert.Equal(HttpMethod.Delete.Method, recorded.Method);
+        Assert.Equal("/links/lnk_1", recorded.Path);
+        // No body: the update's is still the only one.
+        Assert.Single(recorded.Bodies);
+    }
+
+    [Fact]
     public async Task RetriesOn503ThenSucceeds()
     {
         var (httpClient, _) = TestFixtures.CreateTestClient([
