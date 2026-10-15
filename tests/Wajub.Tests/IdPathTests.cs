@@ -88,6 +88,7 @@ public class IdPathTests
     [InlineData("cus_1?force=1", "/customers/cus_1%3Fforce%3D1/tax_ids/txi_1")]
     [InlineData("cus_1#", "/customers/cus_1%23/tax_ids/txi_1")]
     [InlineData("cus_1%2Fx", "/customers/cus_1%252Fx/tax_ids/txi_1")]
+    [InlineData("cus.1..2", "/customers/cus.1..2/tax_ids/txi_1")]
     public async Task AnyOtherCharacterStaysInTheId(string customerId, string path)
     {
         var (httpClient, recorded) = TestFixtures.CreateTestClient([_ => (200, new Dictionary<string, object?>())]);
