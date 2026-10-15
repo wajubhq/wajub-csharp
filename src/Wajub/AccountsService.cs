@@ -13,7 +13,7 @@ public class AccountsService : CrudService
         RequestOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        var response = await Base.PostAsync($"/accounts/{id}/token", null, options, cancellationToken);
+        var response = await Base.PostAsync($"/accounts/{PathSegment.Id(id)}/token", null, options, cancellationToken);
         return JsonUtils.PickResource(response, "account");
     }
 }

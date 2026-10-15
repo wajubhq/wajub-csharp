@@ -14,7 +14,7 @@ public class DisputesService
 
     public async Task<Dictionary<string, object?>> RetrieveAsync(string id, CancellationToken cancellationToken = default)
     {
-        var response = await Base.GetAsync($"/disputes/{id}", cancellationToken: cancellationToken);
+        var response = await Base.GetAsync($"/disputes/{PathSegment.Id(id)}", cancellationToken: cancellationToken);
         return JsonUtils.PickResource(response, "dispute");
     }
 
@@ -24,7 +24,7 @@ public class DisputesService
         RequestOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        var response = await Base.PostAsync($"/disputes/{id}/submit-evidence", parameters, options, cancellationToken);
+        var response = await Base.PostAsync($"/disputes/{PathSegment.Id(id)}/submit-evidence", parameters, options, cancellationToken);
         return JsonUtils.PickResource(response, "dispute");
     }
 
@@ -33,7 +33,7 @@ public class DisputesService
         RequestOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        var response = await Base.PostAsync($"/disputes/{id}/accept", null, options, cancellationToken);
+        var response = await Base.PostAsync($"/disputes/{PathSegment.Id(id)}/accept", null, options, cancellationToken);
         return JsonUtils.PickResource(response, "dispute");
     }
 
@@ -42,7 +42,7 @@ public class DisputesService
         RequestOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        var response = await Base.PostAsync($"/disputes/{id}/close", null, options, cancellationToken);
+        var response = await Base.PostAsync($"/disputes/{PathSegment.Id(id)}/close", null, options, cancellationToken);
         return JsonUtils.PickResource(response, "dispute");
     }
 
@@ -52,7 +52,7 @@ public class DisputesService
         RequestOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        var response = await Base.PostAsync($"/disputes/{id}/messages", parameters, options, cancellationToken);
+        var response = await Base.PostAsync($"/disputes/{PathSegment.Id(id)}/messages", parameters, options, cancellationToken);
         return JsonUtils.PickResource(response, "dispute");
     }
 }

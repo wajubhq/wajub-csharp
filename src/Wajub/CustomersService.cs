@@ -14,7 +14,7 @@ public class CustomersService : CrudService
         RequestOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        var response = await Base.PostAsync($"/customers/{id}/block", parameters, options, cancellationToken);
+        var response = await Base.PostAsync($"/customers/{PathSegment.Id(id)}/block", parameters, options, cancellationToken);
         return JsonUtils.PickResource(response, "customer");
     }
 
@@ -23,7 +23,7 @@ public class CustomersService : CrudService
         RequestOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        var response = await Base.PostAsync($"/customers/{id}/unblock", null, options, cancellationToken);
+        var response = await Base.PostAsync($"/customers/{PathSegment.Id(id)}/unblock", null, options, cancellationToken);
         return JsonUtils.PickResource(response, "customer");
     }
 
@@ -32,7 +32,7 @@ public class CustomersService : CrudService
         RequestOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        var response = await Base.PostAsync($"/customers/{id}/activate", null, options, cancellationToken);
+        var response = await Base.PostAsync($"/customers/{PathSegment.Id(id)}/activate", null, options, cancellationToken);
         return JsonUtils.PickResource(response, "customer");
     }
 
@@ -41,7 +41,7 @@ public class CustomersService : CrudService
         RequestOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        var response = await Base.PostAsync($"/customers/{id}/deactivate", null, options, cancellationToken);
+        var response = await Base.PostAsync($"/customers/{PathSegment.Id(id)}/deactivate", null, options, cancellationToken);
         return JsonUtils.PickResource(response, "customer");
     }
 
@@ -49,7 +49,7 @@ public class CustomersService : CrudService
         string customerId,
         CancellationToken cancellationToken = default)
     {
-        var response = await Base.GetAsync($"/customers/{customerId}/tax_ids", cancellationToken: cancellationToken);
+        var response = await Base.GetAsync($"/customers/{PathSegment.Id(customerId)}/tax_ids", cancellationToken: cancellationToken);
         var (data, meta) = JsonUtils.PickList(response, "tax_ids");
         return (data, meta);
     }
@@ -60,7 +60,7 @@ public class CustomersService : CrudService
         RequestOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        var response = await Base.PostAsync($"/customers/{customerId}/tax_ids", parameters, options, cancellationToken);
+        var response = await Base.PostAsync($"/customers/{PathSegment.Id(customerId)}/tax_ids", parameters, options, cancellationToken);
         return JsonUtils.PickResource(response, "tax_id");
     }
 
@@ -70,6 +70,6 @@ public class CustomersService : CrudService
         RequestOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        await Base.DeleteAsync($"/customers/{customerId}/tax_ids/{taxId}", options, cancellationToken);
+        await Base.DeleteAsync($"/customers/{PathSegment.Id(customerId)}/tax_ids/{PathSegment.Id(taxId)}", options, cancellationToken);
     }
 }

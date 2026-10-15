@@ -18,7 +18,7 @@ public class PaymentsService
 
     public async Task<Payment> RetrieveAsync(string id, CancellationToken cancellationToken = default)
     {
-        var response = await Base.GetAsync($"/payments/{id}", cancellationToken: cancellationToken);
+        var response = await Base.GetAsync($"/payments/{PathSegment.Id(id)}", cancellationToken: cancellationToken);
         return Payment.Parse(new Dictionary<string, object?>
         {
             ["transaction"] = JsonUtils.PickResource(response, "transaction"),
@@ -35,7 +35,7 @@ public class PaymentsService
         RequestOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        var response = await Base.DeleteAsync($"/payments/{id}", options, cancellationToken);
+        var response = await Base.DeleteAsync($"/payments/{PathSegment.Id(id)}", options, cancellationToken);
         return Payment.Parse(new Dictionary<string, object?>
         {
             ["transaction"] = JsonUtils.PickResource(response, "transaction"),
@@ -48,7 +48,7 @@ public class PaymentsService
         RequestOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        var response = await Base.PostAsync($"/payments/{id}", parameters, options, cancellationToken);
+        var response = await Base.PostAsync($"/payments/{PathSegment.Id(id)}", parameters, options, cancellationToken);
         return Payment.Parse(new Dictionary<string, object?>
         {
             ["transaction"] = JsonUtils.PickResource(response, "transaction"),
@@ -61,7 +61,7 @@ public class PaymentsService
         RequestOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        var response = await Base.PostAsync($"/payments/{id}/splits", parameters, options, cancellationToken);
+        var response = await Base.PostAsync($"/payments/{PathSegment.Id(id)}/splits", parameters, options, cancellationToken);
         return Payment.Parse(new Dictionary<string, object?>
         {
             ["transaction"] = JsonUtils.PickResource(response, "transaction"),
@@ -86,7 +86,7 @@ public class PaymentsService
     /// <summary>Retrieves a refund of any payment by its id.</summary>
     public async Task<Refund> RetrieveRefundAsync(string refundId, CancellationToken cancellationToken = default)
     {
-        var response = await Base.GetAsync($"/refunds/{refundId}", cancellationToken: cancellationToken);
+        var response = await Base.GetAsync($"/refunds/{PathSegment.Id(refundId)}", cancellationToken: cancellationToken);
         return Refund.Parse(response);
     }
 
@@ -95,7 +95,7 @@ public class PaymentsService
         Dictionary<string, object?>? parameters = null,
         CancellationToken cancellationToken = default)
     {
-        var response = await Base.GetAsync($"/payments/{id}/refunds", parameters, cancellationToken);
+        var response = await Base.GetAsync($"/payments/{PathSegment.Id(id)}/refunds", parameters, cancellationToken);
         var (data, meta) = JsonUtils.PickList(response, "refunds");
         return (data, meta);
     }

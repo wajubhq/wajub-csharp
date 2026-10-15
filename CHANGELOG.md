@@ -45,6 +45,13 @@ The package uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Amounts are in the currency's main unit**: send `12.50m` for GHS 12.50,
   not `1250`. The README said the smallest unit (cents). Currencies without
   decimals, such as XAF and XOF, are not affected.
+- **An id that can't be a Wajub id is refused before anything is sent.** An
+  empty id, `.`, `..` or an id with a `/` throws an `ArgumentException` that
+  names the parameter. Such an id reached another endpoint:
+  `Payments.RetrieveAsync("pay_1/refunds")` read the payment's refunds. Any
+  other character now stays in the id: `Customers.DeleteTaxIdAsync("cus_1?x",
+  "txi_1")` sent `DELETE /customers/cus_1`. Wajub ids never contain `/`, so
+  calls with real ids are not affected.
 
 ## [2.0.0] — 2026-10-12
 

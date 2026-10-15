@@ -13,7 +13,7 @@ public class WebhookEndpointsService : CrudService
         RequestOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        var response = await Base.PostAsync($"/webhooks/{id}/rotate-secret", null, options, cancellationToken);
+        var response = await Base.PostAsync($"/webhooks/{PathSegment.Id(id)}/rotate-secret", null, options, cancellationToken);
         return JsonUtils.PickResource(response, "endpoint");
     }
 }

@@ -53,6 +53,6 @@ public class ShieldService
         RequestOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        await Base.DeleteAsync($"/shield/blocklist/{id}", options, cancellationToken);
+        await Base.DeleteAsync($"/shield/blocklist/{PathSegment.Id(id)}", options, cancellationToken);
     }
 }
