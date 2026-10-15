@@ -11,26 +11,21 @@ The package uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 - **`Payment.AmountDecimal` and `Refund.AmountDecimal`, the amount with its
-  decimals.** The API sends amounts in the major unit of the currency, so
-  GHS 12.50 arrives as `12.5`. `AmountDecimal` is a `decimal` that keeps it
-  digit for digit: `12.5m` for GHS 12.50, `15000m` for XAF 15,000. An amount
-  sent as a string (`"12.50"`) reads the same. Put it back in a request as is,
-  for a refund for instance, and it goes out with its cents.
+  decimals**, as a `decimal`: `12.5m` for GHS 12.50, `15000m` for XAF 15,000.
 
 ### Deprecated
 - **`Payment.Amount` and `Refund.Amount`.** They are `long` and drop the
-  decimals: GHS 12.50 reads `12`. They still hold that value, so code that
-  reads them compiles and behaves as before, with an obsolete warning
-  (`CS0618`). Read `AmountDecimal` instead.
+  decimals: GHS 12.50 reads `12`. Code that reads them still compiles and gets
+  the same value, with an obsolete warning (`CS0618`). Read `AmountDecimal`
+  instead.
 
 ### Fixed
-- **A decimal in a query parameter is written with a dot whatever the
-  culture.** Under a culture such as `fr-FR`, `["amount_min"] = 12.5m` on a
-  list went out as `12,5`. Query values are now written with the invariant
-  culture. Request bodies were not affected.
-- The README said amounts are passed in the smallest currency unit (cents).
-  The API reads them in the major unit: send `12.50` for GHS 12.50, not `1250`.
-  Zero-decimal currencies such as XAF and XOF are not affected.
+- **A decimal in a list filter is sent correctly whatever the culture.** Under
+  a culture such as `fr-FR`, `["amount_min"] = 12.5m` on a list was sent as
+  `12,5`.
+- **Amounts are in the currency's main unit**: send `12.50m` for GHS 12.50,
+  not `1250`. The README said the smallest unit (cents). Currencies without
+  decimals, such as XAF and XOF, are not affected.
 
 ## [2.0.0] — 2026-10-12
 
@@ -45,12 +40,8 @@ A major version: `Webhooks.ConstructEvent` returns plain values instead of
   `Dictionary<string, object?>` or a `List<object?>`. Code that read the old
   `JsonElement` values (`((JsonElement)evt["event"]).GetString()`) must switch
   to the plain values.
-- **The `409` for an `Idempotency-Key` still being processed is retried.** A
-  call sent again after a timeout can reach the API while the first one is
-  still running; the API answers `409` with `errors.idempotency_key`. The
-  client now waits 2 then 4 seconds and asks again with the same key, within
-  its usual 2 retries, and returns the first request's result. Every other
-  `409` is still thrown at once.
+- **A create sent again with the same idempotency key while the first is still
+  running** now returns the first request's result instead of a `409` error.
 
 ### Fixed
 - A missing `X-Wajub-Signature` or `X-Wajub-Timestamp` header (`null`) threw a
@@ -58,11 +49,12 @@ A major version: `Webhooks.ConstructEvent` returns plain values instead of
 
 ## [1.2.0] — 2026-10-01
 
-Tagged, never published to NuGet. Its change ships with 2.0.0.
+Not published to NuGet. Its change ships with 2.0.0.
 
 ### Removed
 - `Payments.InitializeAsync`, an alias of `Payments.CreateAsync`. Call `CreateAsync`.
 
 ## [1.1.1] — 2026-08-09
 
-Last version published before this changelog was started.
+### Changed
+- README corrections; no change to the package.
