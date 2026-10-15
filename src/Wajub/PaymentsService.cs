@@ -68,6 +68,28 @@ public class PaymentsService
         });
     }
 
+    /// <summary>
+    /// Refunds the payment, in full or for the <c>amount</c> you pass, and returns the refund.
+    /// Pass its <c>reason</c>; the payment is the <paramref name="id"/> given here.
+    /// </summary>
+    public async Task<Refund> RefundAsync(
+        string id,
+        Dictionary<string, object?> parameters,
+        RequestOptions? options = null,
+        CancellationToken cancellationToken = default)
+    {
+        var body = new Dictionary<string, object?>(parameters) { ["payment"] = id };
+        var response = await Base.PostAsync("/refunds", body, options, cancellationToken);
+        return Refund.Parse(response);
+    }
+
+    /// <summary>Retrieves a refund of any payment by its id.</summary>
+    public async Task<Refund> RetrieveRefundAsync(string refundId, CancellationToken cancellationToken = default)
+    {
+        var response = await Base.GetAsync($"/refunds/{refundId}", cancellationToken: cancellationToken);
+        return Refund.Parse(response);
+    }
+
     public async Task<(List<Dictionary<string, object?>> Data, Dictionary<string, object?>? Meta)> ListRefundsAsync(
         string id,
         Dictionary<string, object?>? parameters = null,

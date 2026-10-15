@@ -12,6 +12,10 @@ The package uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 - **`Payment.AmountDecimal` and `Refund.AmountDecimal`, the amount with its
   decimals**, as a `decimal`: `12.5m` for GHS 12.50, `15000m` for XAF 15,000.
+- **`Payments.RefundAsync` and `Payments.RetrieveRefundAsync`, which return a
+  `Refund`.** `RefundAsync` refunds a payment, in full or for the `amount` you
+  pass; `RetrieveRefundAsync` reads a refund by its id. `Refunds.CreateAsync`,
+  `RetrieveAsync` and `ListAsync` still return dictionaries.
 
 ### Deprecated
 - **`Payment.Amount` and `Refund.Amount`.** They are `long` and drop the

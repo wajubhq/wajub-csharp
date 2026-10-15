@@ -74,7 +74,7 @@ builder.Services.AddSingleton(_ => WajubClient.Create(new WajubConfig
 
 | Purpose | Service | Methods |
 |---------|---------|---------|
-| Payments | `wajub.Payments` | `CreateAsync`, `RetrieveAsync`, `ListAsync`, `CancelAsync`, `ProcessAsync`, `ProcessSplitAsync`, `ListRefundsAsync` |
+| Payments | `wajub.Payments` | `CreateAsync`, `RetrieveAsync`, `ListAsync`, `CancelAsync`, `ProcessAsync`, `ProcessSplitAsync`, `RefundAsync`, `RetrieveRefundAsync`, `ListRefundsAsync` |
 | Refunds | `wajub.Refunds` | `CreateAsync`, `RetrieveAsync`, `ListAsync` |
 | Customers | `wajub.Customers` | `CreateAsync`, `RetrieveAsync`, `UpdateAsync`, `DeleteAsync`, `ListAsync`, `BlockAsync`, `UnblockAsync`, `ActivateAsync`, `DeactivateAsync`, `ListTaxIdsAsync`, `CreateTaxIdAsync`, `DeleteTaxIdAsync` |
 | Payment links | `wajub.Links` | `CreateAsync`, `RetrieveAsync`, `UpdateAsync`, `DeleteAsync`, `ListAsync` |
@@ -91,6 +91,16 @@ builder.Services.AddSingleton(_ => WajubClient.Create(new WajubConfig
 | Tax | `wajub.Tax` | `GetSettingsAsync`, `UpdateSettingsAsync`, `RatesAsync`, `CalculateAsync`, `ReportsAsync`, `ListCodesAsync`, `RetrieveCodeAsync`, `ListRegistrationsAsync`, `CreateRegistrationAsync`, `RetrieveRegistrationAsync`, `UpdateRegistrationAsync`, `DeleteRegistrationAsync`, `JurisdictionsAsync`, `ThresholdsAsync`, `ThresholdAlertsAsync` |
 | Fraud (Shield) | `wajub.Shield` | `GetSettingsAsync`, `UpdateSettingsAsync`, `StatsAsync`, `ListBlocklistAsync`, `AddToBlocklistAsync`, `RemoveFromBlocklistAsync` |
 | Reference data | `wajub.Global` | `PingAsync`, `ChannelsAsync`, `CountriesAsync`, `CurrenciesAsync` |
+
+`Payments.RefundAsync` refunds a payment, in full or for the `amount` you pass, and `Payments.RetrieveRefundAsync` reads a refund by its id. Both return a `Refund`, whose amount, decimals included, is in `refund.AmountDecimal`:
+
+```csharp
+var refund = await wajub.Payments.RefundAsync(payment.Id, new Dictionary<string, object?>
+{
+    ["amount"] = 5000,
+    ["reason"] = "requested_by_customer",
+});
+```
 
 ## Acting for a connected account
 
