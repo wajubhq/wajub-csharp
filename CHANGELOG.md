@@ -27,8 +27,9 @@ The package uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   decimals: GHS 12.50 reads `12`. Code that reads them still compiles and gets
   the same value, with an obsolete warning (`CS0618`). Read `AmountDecimal`
   instead.
-- **`Refunds.UpdateAsync` and `Refunds.DeleteAsync`.** The API has no endpoint
-  to change or delete a refund, so both always throw a `WajubError` with
+- **`Refunds.UpdateAsync`, `Refunds.DeleteAsync`, `Transfers.UpdateAsync` and
+  `Transfers.DeleteAsync`.** The API has no endpoint to change or delete a
+  refund or a payout, so these calls always throw a `WajubError` with
   `HttpStatus` `405`. Don't call them; they will be removed in the next major
   version.
 

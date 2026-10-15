@@ -92,6 +92,8 @@ builder.Services.AddSingleton(_ => WajubClient.Create(new WajubConfig
 | Fraud (Shield) | `wajub.Shield` | `GetSettingsAsync`, `UpdateSettingsAsync`, `StatsAsync`, `ListBlocklistAsync`, `AddToBlocklistAsync`, `RemoveFromBlocklistAsync` |
 | Reference data | `wajub.Global` | `PingAsync`, `ChannelsAsync`, `CountriesAsync`, `CurrenciesAsync` |
 
+Refunds and payouts can't be changed or deleted: `Refunds.UpdateAsync`, `Refunds.DeleteAsync`, `Transfers.UpdateAsync` and `Transfers.DeleteAsync` always throw a `WajubError`.
+
 `Payments.RefundAsync` refunds a payment, in full or for the `amount` you pass, and `Payments.RetrieveRefundAsync` reads a refund by its id. Both return a `Refund`, whose amount, decimals included, is in `refund.AmountDecimal` and its currency in `refund.Currency`:
 
 ```csharp
@@ -101,8 +103,6 @@ var refund = await wajub.Payments.RefundAsync(payment.Id, new Dictionary<string,
     ["reason"] = "requested_by_customer",
 });
 ```
-
-A refund can't be changed or deleted: `wajub.Refunds.UpdateAsync` and `wajub.Refunds.DeleteAsync` always throw a `WajubError`.
 
 ## Acting for a connected account
 
