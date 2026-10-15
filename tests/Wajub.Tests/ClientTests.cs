@@ -226,7 +226,7 @@ public class ClientTests
 
         Assert.Equal(3, recorded.IdempotencyKeyAttempts.Count);
         Assert.All(recorded.IdempotencyKeyAttempts, key => Assert.False(string.IsNullOrEmpty(key)));
-        Assert.Equal(1, recorded.IdempotencyKeyAttempts.Distinct().Count());
+        Assert.Single(recorded.IdempotencyKeyAttempts.Distinct());
     }
 
     [Fact]
