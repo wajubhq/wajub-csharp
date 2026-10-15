@@ -60,7 +60,7 @@ public class ClientTests
         var client = TestFixtures.CreateWajubClient(httpClient);
         await client.Payments.CreateAsync(new Dictionary<string, object?> { ["amount"] = 1000 });
 
-        Assert.StartsWith("wajub-", recorded.IdempotencyKey);
+        Assert.StartsWith("wajub-", Assert.Single(Assert.Single(recorded.IdempotencyKeyValues)));
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public class ClientTests
             new Dictionary<string, object?> { ["amount"] = 1000 },
             new RequestOptions { IdempotencyKey = "custom-key-123", Sync = "acct_sync_ref" });
 
-        Assert.Equal("custom-key-123", recorded.IdempotencyKey);
+        Assert.Equal(["custom-key-123"], Assert.Single(recorded.IdempotencyKeyValues));
         Assert.Equal("acct_sync_ref", recorded.Sync);
     }
 
@@ -89,7 +89,7 @@ public class ClientTests
         var client = TestFixtures.CreateWajubClient(httpClient);
         await client.Payments.ListAsync();
 
-        Assert.Equal(string.Empty, recorded.IdempotencyKey);
+        Assert.Empty(Assert.Single(recorded.IdempotencyKeyValues));
     }
 
     [Fact]
@@ -227,6 +227,7 @@ public class ClientTests
         Assert.Equal(3, recorded.IdempotencyKeyAttempts.Count);
         Assert.All(recorded.IdempotencyKeyAttempts, key => Assert.False(string.IsNullOrEmpty(key)));
         Assert.Single(recorded.IdempotencyKeyAttempts.Distinct());
+        Assert.All(recorded.IdempotencyKeyValues, keys => Assert.Single(keys));
     }
 
     [Fact]
