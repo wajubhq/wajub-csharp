@@ -32,6 +32,11 @@ The package uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   refund or a payout, so these calls always throw a `WajubError` with
   `HttpStatus` `405`. Don't call them; they will be removed in the next major
   version.
+- **`Listen.ConfigAsync`, `Listen.AuthAsync` and the client's `Listen`
+  property.** The API no longer offers them: both calls throw a `WajubError`
+  with `HttpStatus` `410`. Code that uses them still compiles, with an obsolete
+  warning (`CS0618`). To receive webhooks on your machine, forward them with
+  the Wajub CLI: `wajub listen`.
 
 ### Fixed
 - **A decimal in a list filter is sent correctly whatever the culture.** Under
