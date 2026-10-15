@@ -66,12 +66,13 @@ internal static class ErrorFactory
         };
     }
 
-    /// <summary>Every message the API gave for one field: a list as is, a single message as a list of one.</summary>
+    /// <summary>Every message the API gave for one field: a list as is, a single message as a list of one, null as none.</summary>
     private static IReadOnlyList<string> Messages(object? value)
     {
         return value switch
         {
             JsonElement { ValueKind: JsonValueKind.Array } arr => arr.EnumerateArray().Select(item => item.ToString()).ToList(),
+            JsonElement { ValueKind: JsonValueKind.Null } => [],
             string s => [s],
             System.Collections.IEnumerable items => items.Cast<object?>().Select(item => item?.ToString() ?? string.Empty).ToList(),
             null => [],

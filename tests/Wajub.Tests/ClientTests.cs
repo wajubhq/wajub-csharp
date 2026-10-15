@@ -363,6 +363,26 @@ public class ClientTests
     }
 
     [Fact]
+    public async Task FieldErrors_NullMessagesAreAnEmptyList()
+    {
+        var (httpClient, _) = TestFixtures.CreateTestClient([
+            _ => (422, new Dictionary<string, object?>
+            {
+                ["message"] = "The given data was invalid.",
+                ["errors"] = new Dictionary<string, object?> { ["email"] = null },
+            }),
+        ]);
+
+        var client = TestFixtures.CreateWajubClient(httpClient);
+        var ex = await Assert.ThrowsAsync<InvalidRequestError>(() =>
+            client.Payments.CreateAsync(new Dictionary<string, object?> { ["amount"] = 1 }));
+
+        Assert.NotNull(ex.FieldErrors);
+        Assert.Empty(ex.FieldErrors["email"]);
+        Assert.Equal(string.Empty, ex.Errors?["email"]);
+    }
+
+    [Fact]
     public void ErrorFromResponse_FieldErrorsOnEveryErrorType()
     {
         var body = new Dictionary<string, object?>
