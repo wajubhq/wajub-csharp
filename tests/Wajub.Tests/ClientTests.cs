@@ -150,6 +150,27 @@ public class ClientTests
     }
 
     [Fact]
+    public async Task HttpPost_RefusesTwoIdempotencyKeyHeadersThatDifferOnlyInCase()
+    {
+        var (httpClient, recorded) = TestFixtures.CreateTestClient([]);
+
+        var client = TestFixtures.CreateWajubClient(httpClient);
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() => client.Payments.CreateAsync(
+            new Dictionary<string, object?> { ["amount"] = 1000 },
+            new RequestOptions
+            {
+                Headers = new Dictionary<string, string>
+                {
+                    ["Idempotency-Key"] = "order-42",
+                    ["idempotency-key"] = "order-43",
+                },
+            }));
+
+        Assert.Equal("options", ex.ParamName);
+        Assert.Empty(recorded.IdempotencyKeyValues);
+    }
+
+    [Fact]
     public async Task HttpPost_SendsTheSameIdempotencyKeyOnceWhenGivenTwice()
     {
         var (httpClient, recorded) = TestFixtures.CreateTestClient([
