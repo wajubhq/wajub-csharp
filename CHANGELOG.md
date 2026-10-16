@@ -50,6 +50,9 @@ The package uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `Payments.CreateAsync`, failed with a `422` (the request carried two keys)
   and now uses that key; with a different `RequestOptions.IdempotencyKey`, it
   throws `ArgumentException` before sending.
+- **A blank `RequestOptions.IdempotencyKey`, or a blank `Idempotency-Key` in
+  `RequestOptions.Headers`, counts as no key**: the request is protected as
+  when you give none.
 
 ### Security
 - **An id that is not a Wajub id is refused before anything is sent.** If an
