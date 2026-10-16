@@ -79,6 +79,63 @@ public class ClientTests
         Assert.Equal("acct_sync_ref", recorded.Sync);
     }
 
+    [Theory]
+    [InlineData("Idempotency-Key")]
+    [InlineData("idempotency-key")]
+    [InlineData("IDEMPOTENCY-KEY")]
+    public async Task HttpPost_SendsOnlyTheIdempotencyKeyOfTheHeaders(string header)
+    {
+        var (httpClient, recorded) = TestFixtures.CreateTestClient([
+            _ => (503, new Dictionary<string, object?> { ["message"] = "Unavailable" }),
+            _ => (200, new Dictionary<string, object?> { ["transaction"] = new Dictionary<string, object?> { ["id"] = "pay_1" } }),
+        ]);
+
+        var client = TestFixtures.CreateWajubClient(httpClient);
+        await client.Payments.CreateAsync(
+            new Dictionary<string, object?> { ["amount"] = 1000 },
+            new RequestOptions { Headers = new Dictionary<string, string> { [header] = "order-42" } });
+
+        Assert.Equal(2, recorded.IdempotencyKeyValues.Count);
+        Assert.All(recorded.IdempotencyKeyValues, keys => Assert.Equal(["order-42"], keys));
+    }
+
+    [Fact]
+    public async Task HttpPost_RefusesTwoDifferentIdempotencyKeys()
+    {
+        var (httpClient, recorded) = TestFixtures.CreateTestClient([]);
+
+        var client = TestFixtures.CreateWajubClient(httpClient);
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() => client.Payments.CreateAsync(
+            new Dictionary<string, object?> { ["amount"] = 1000 },
+            new RequestOptions
+            {
+                IdempotencyKey = "order-42",
+                Headers = new Dictionary<string, string> { ["idempotency-key"] = "order-43" },
+            }));
+
+        Assert.Equal("options", ex.ParamName);
+        Assert.Empty(recorded.IdempotencyKeyValues);
+    }
+
+    [Fact]
+    public async Task HttpPost_SendsTheSameIdempotencyKeyOnceWhenGivenTwice()
+    {
+        var (httpClient, recorded) = TestFixtures.CreateTestClient([
+            _ => (200, new Dictionary<string, object?> { ["transaction"] = new Dictionary<string, object?> { ["id"] = "pay_1" } }),
+        ]);
+
+        var client = TestFixtures.CreateWajubClient(httpClient);
+        await client.Payments.CreateAsync(
+            new Dictionary<string, object?> { ["amount"] = 1000 },
+            new RequestOptions
+            {
+                IdempotencyKey = "order-42",
+                Headers = new Dictionary<string, string> { ["Idempotency-Key"] = "order-42" },
+            });
+
+        Assert.Equal(["order-42"], Assert.Single(recorded.IdempotencyKeyValues));
+    }
+
     [Fact]
     public async Task HttpGet_DoesNotSendIdempotencyKey()
     {

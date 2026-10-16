@@ -52,6 +52,10 @@ The package uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   other character now stays in the id: `Customers.DeleteTaxIdAsync("cus_1?x",
   "txi_1")` sent `DELETE /customers/cus_1`. Wajub ids never contain `/`, so
   calls with real ids are not affected.
+- **An `Idempotency-Key` in `RequestOptions.Headers` is the only key sent.**
+  The SDK sent its own key with it, so the request carried two. The header
+  name is matched whatever its case. With a different
+  `RequestOptions.IdempotencyKey`, the call throws an `ArgumentException`.
 
 ## [2.0.0] — 2026-10-12
 
