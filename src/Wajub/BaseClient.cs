@@ -194,12 +194,12 @@ internal sealed class BaseClient : IDisposable
 
     /// <summary>
     /// The key the caller chose, in <see cref="RequestOptions.IdempotencyKey"/> or as an
-    /// Idempotency-Key header (any case): a request sends one key, never two.
+    /// Idempotency-Key header (any case): a request sends one key, never two. A blank key is none.
     /// </summary>
     private static string? CallerIdempotencyKey(RequestOptions? options)
     {
         var fromHeaders = options?.Headers?
-            .Where(header => IsIdempotencyKeyHeader(header.Key) && !string.IsNullOrEmpty(header.Value))
+            .Where(header => IsIdempotencyKeyHeader(header.Key) && !string.IsNullOrWhiteSpace(header.Value))
             .Select(header => header.Value)
             .Distinct()
             .ToList() ?? [];
@@ -210,7 +210,7 @@ internal sealed class BaseClient : IDisposable
 
         var fromHeader = fromHeaders.SingleOrDefault();
         var fromOption = options?.IdempotencyKey;
-        if (string.IsNullOrEmpty(fromOption))
+        if (string.IsNullOrWhiteSpace(fromOption))
         {
             return fromHeader;
         }

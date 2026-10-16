@@ -117,6 +117,38 @@ public class ClientTests
         Assert.Empty(recorded.IdempotencyKeyValues);
     }
 
+    [Theory]
+    [InlineData(" ", null, null)]
+    [InlineData(null, " ", null)]
+    [InlineData("\t", "", null)]
+    [InlineData(" ", "order-42", "order-42")]
+    [InlineData("order-42", " ", "order-42")]
+    public async Task HttpPost_ABlankIdempotencyKeyCountsAsNone(string? option, string? header, string? sent)
+    {
+        var (httpClient, recorded) = TestFixtures.CreateTestClient([
+            _ => (200, new Dictionary<string, object?> { ["transaction"] = new Dictionary<string, object?> { ["id"] = "pay_1" } }),
+        ]);
+
+        var client = TestFixtures.CreateWajubClient(httpClient);
+        await client.Payments.CreateAsync(
+            new Dictionary<string, object?> { ["amount"] = 1000 },
+            new RequestOptions
+            {
+                IdempotencyKey = option,
+                Headers = header is null ? null : new Dictionary<string, string> { ["Idempotency-Key"] = header },
+            });
+
+        var key = Assert.Single(Assert.Single(recorded.IdempotencyKeyValues));
+        if (sent is null)
+        {
+            Assert.StartsWith("wajub-", key);
+        }
+        else
+        {
+            Assert.Equal(sent, key);
+        }
+    }
+
     [Fact]
     public async Task HttpPost_SendsTheSameIdempotencyKeyOnceWhenGivenTwice()
     {
