@@ -14,7 +14,7 @@ public class EventsService
 
     public async Task<Dictionary<string, object?>> RetrieveAsync(string id, CancellationToken cancellationToken = default)
     {
-        var response = await Base.GetAsync($"/events/{id}", cancellationToken: cancellationToken);
+        var response = await Base.GetAsync($"/events/{PathSegment.Id(id)}", cancellationToken: cancellationToken);
         return JsonUtils.PickResource(response, "event");
     }
 
@@ -23,7 +23,7 @@ public class EventsService
         RequestOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        var response = await Base.PostAsync($"/events/{id}/resend", null, options, cancellationToken);
+        var response = await Base.PostAsync($"/events/{PathSegment.Id(id)}/resend", null, options, cancellationToken);
         return JsonUtils.PickResource(response, "event");
     }
 }

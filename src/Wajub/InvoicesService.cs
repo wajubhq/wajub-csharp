@@ -13,7 +13,7 @@ public class InvoicesService : CrudService
         RequestOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        var response = await Base.PostAsync($"/invoices/{id}/send", null, options, cancellationToken);
+        var response = await Base.PostAsync($"/invoices/{PathSegment.Id(id)}/send", null, options, cancellationToken);
         return JsonUtils.PickResource(response, "invoice");
     }
 
@@ -23,7 +23,7 @@ public class InvoicesService : CrudService
         RequestOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        var response = await Base.PostAsync($"/invoices/{id}/mark-paid", parameters, options, cancellationToken);
+        var response = await Base.PostAsync($"/invoices/{PathSegment.Id(id)}/mark-paid", parameters, options, cancellationToken);
         return JsonUtils.PickResource(response, "invoice");
     }
 
@@ -32,7 +32,7 @@ public class InvoicesService : CrudService
         RequestOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        var response = await Base.PostAsync($"/invoices/{id}/cancel", null, options, cancellationToken);
+        var response = await Base.PostAsync($"/invoices/{PathSegment.Id(id)}/cancel", null, options, cancellationToken);
         return JsonUtils.PickResource(response, "invoice");
     }
 }

@@ -23,12 +23,14 @@ internal static class ErrorFactory
         }
 
         Dictionary<string, string>? fieldErrors = null;
+        Dictionary<string, IReadOnlyList<string>>? allFieldErrors = null;
         if (body.TryGetValue("errors", out var rawErrors) && rawErrors is not null)
         {
             var errorsDict = JsonUtils.AsDictionary(rawErrors);
             if (errorsDict is not null)
             {
                 fieldErrors = new Dictionary<string, string>();
+                allFieldErrors = new Dictionary<string, IReadOnlyList<string>>();
                 foreach (var (field, value) in errorsDict)
                 {
                     if (value is JsonElement { ValueKind: JsonValueKind.Array } arr && arr.GetArrayLength() > 0)
@@ -47,18 +49,34 @@ internal static class ErrorFactory
                     {
                         fieldErrors[field] = value?.ToString() ?? string.Empty;
                     }
+
+                    allFieldErrors[field] = Messages(value);
                 }
             }
         }
 
         return status switch
         {
-            401 => new AuthenticationError(message, code, status, fieldErrors, body),
-            403 => new PermissionError(message, code, status, fieldErrors, body),
-            404 => new NotFoundError(message, code, status, fieldErrors, body),
-            429 => new RateLimitError(message, code, status, fieldErrors, body, retryAfter),
-            400 or 422 => new InvalidRequestError(message, code, status, fieldErrors, body),
-            _ => new WajubError(message, code, status) { Errors = fieldErrors, Raw = body },
+            401 => new AuthenticationError(message, code, status, fieldErrors, body) { FieldErrors = allFieldErrors },
+            403 => new PermissionError(message, code, status, fieldErrors, body) { FieldErrors = allFieldErrors },
+            404 => new NotFoundError(message, code, status, fieldErrors, body) { FieldErrors = allFieldErrors },
+            429 => new RateLimitError(message, code, status, fieldErrors, body, retryAfter) { FieldErrors = allFieldErrors },
+            400 or 422 => new InvalidRequestError(message, code, status, fieldErrors, body) { FieldErrors = allFieldErrors },
+            _ => new WajubError(message, code, status) { Errors = fieldErrors, FieldErrors = allFieldErrors, Raw = body },
+        };
+    }
+
+    /// <summary>Every message the API gave for one field: a list as is, a single message as a list of one, null as none.</summary>
+    private static IReadOnlyList<string> Messages(object? value)
+    {
+        return value switch
+        {
+            JsonElement { ValueKind: JsonValueKind.Array } arr => arr.EnumerateArray().Select(item => item.ToString()).ToList(),
+            JsonElement { ValueKind: JsonValueKind.Null } => [],
+            string s => [s],
+            System.Collections.IEnumerable items => items.Cast<object?>().Select(item => item?.ToString() ?? string.Empty).ToList(),
+            null => [],
+            _ => [value.ToString() ?? string.Empty],
         };
     }
 }

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Text;
 
@@ -85,14 +86,16 @@ internal sealed class BaseClient : IDisposable
             var builder = new UriBuilder(endpoint);
             var pairs = query
                 .Where(kvp => kvp.Value is not null)
-                .Select(kvp => $"{Uri.EscapeDataString(kvp.Key)}={Uri.EscapeDataString(kvp.Value!.ToString()!)}");
+                // Invariant: under a culture that writes 12,5 an amount would
+                // reach the API as "12,5".
+                .Select(kvp => $"{Uri.EscapeDataString(kvp.Key)}={Uri.EscapeDataString(Convert.ToString(kvp.Value, CultureInfo.InvariantCulture) ?? string.Empty)}");
             builder.Query = string.Join("&", pairs);
             endpoint = builder.Uri.ToString();
         }
 
         string? payload = body is null ? null : JsonUtils.SerializeBody(body);
 
-        var idempotencyKey = options?.IdempotencyKey;
+        var idempotencyKey = CallerIdempotencyKey(options);
         if (string.IsNullOrEmpty(idempotencyKey)
             && method != HttpMethod.Get
             && method != HttpMethod.Delete)
@@ -113,6 +116,12 @@ internal sealed class BaseClient : IDisposable
             {
                 foreach (var (key, value) in options.Headers)
                 {
+                    // Sent once, below, with the key the caller chose.
+                    if (IsIdempotencyKeyHeader(key))
+                    {
+                        continue;
+                    }
+
                     request.Headers.TryAddWithoutValidation(key, value);
                 }
             }
@@ -182,4 +191,38 @@ internal sealed class BaseClient : IDisposable
             }
         }
     }
+
+    /// <summary>
+    /// The key the caller chose, in <see cref="RequestOptions.IdempotencyKey"/> or as an
+    /// Idempotency-Key header (any case): a request sends one key, never two. A blank key is none.
+    /// </summary>
+    private static string? CallerIdempotencyKey(RequestOptions? options)
+    {
+        var fromHeaders = options?.Headers?
+            .Where(header => IsIdempotencyKeyHeader(header.Key) && !string.IsNullOrWhiteSpace(header.Value))
+            .Select(header => header.Value)
+            .Distinct()
+            .ToList() ?? [];
+        if (fromHeaders.Count > 1)
+        {
+            throw new ArgumentException("RequestOptions.Headers holds more than one Idempotency-Key: set one.", nameof(options));
+        }
+
+        var fromHeader = fromHeaders.SingleOrDefault();
+        var fromOption = options?.IdempotencyKey;
+        if (string.IsNullOrWhiteSpace(fromOption))
+        {
+            return fromHeader;
+        }
+
+        if (fromHeader is not null && fromHeader != fromOption)
+        {
+            throw new ArgumentException("RequestOptions.IdempotencyKey and the Idempotency-Key in RequestOptions.Headers differ: set one of them.", nameof(options));
+        }
+
+        return fromOption;
+    }
+
+    private static bool IsIdempotencyKeyHeader(string name) =>
+        string.Equals(name, "Idempotency-Key", StringComparison.OrdinalIgnoreCase);
 }

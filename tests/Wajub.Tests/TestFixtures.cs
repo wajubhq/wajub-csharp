@@ -20,6 +20,11 @@ internal sealed class RecordedRequest
     public string Query { get; set; } = string.Empty;
 
     public List<string> IdempotencyKeyAttempts { get; } = new();
+
+    /// <summary>Every Idempotency-Key value of each request, in order: one request sending two keys shows both.</summary>
+    public List<string[]> IdempotencyKeyValues { get; } = new();
+
+    public List<string> Bodies { get; } = new();
 }
 
 internal sealed class MockHttpMessageHandler : HttpMessageHandler
@@ -49,16 +54,12 @@ internal sealed class MockHttpMessageHandler : HttpMessageHandler
             Last.Authorization = string.IsNullOrEmpty(auth.Parameter) ? auth.Scheme : auth.Parameter;
         }
 
-        if (request.Headers.TryGetValues("Idempotency-Key", out var idempotencyValues))
-        {
-            Last.IdempotencyKey = idempotencyValues.FirstOrDefault() ?? string.Empty;
-        }
-        else
-        {
-            Last.IdempotencyKey = string.Empty;
-        }
-
+        var idempotencyKeys = request.Headers.TryGetValues("Idempotency-Key", out var idempotencyValues)
+            ? idempotencyValues.ToArray()
+            : [];
+        Last.IdempotencyKey = idempotencyKeys.FirstOrDefault() ?? string.Empty;
         Last.IdempotencyKeyAttempts.Add(Last.IdempotencyKey);
+        Last.IdempotencyKeyValues.Add(idempotencyKeys);
 
         if (request.Headers.TryGetValues("X-Sync", out var syncValues))
         {
@@ -71,7 +72,7 @@ internal sealed class MockHttpMessageHandler : HttpMessageHandler
 
         if (request.Content is not null)
         {
-            await request.Content.ReadAsStringAsync(cancellationToken);
+            Last.Bodies.Add(await request.Content.ReadAsStringAsync(cancellationToken));
         }
 
         var status = 200;

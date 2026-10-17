@@ -7,7 +7,11 @@ public class WajubError : Exception
 
     public int HttpStatus { get; init; }
 
+    /// <summary>The first validation message of each field. <see cref="FieldErrors"/> has them all.</summary>
     public Dictionary<string, string>? Errors { get; init; }
+
+    /// <summary>Every validation message of each field, in the order the API gave them.</summary>
+    public IReadOnlyDictionary<string, IReadOnlyList<string>>? FieldErrors { get; init; }
 
     public Dictionary<string, object?>? Raw { get; init; }
 

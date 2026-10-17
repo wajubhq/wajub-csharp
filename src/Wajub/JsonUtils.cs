@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -218,6 +219,42 @@ internal static partial class JsonUtils
                 return false;
         }
     }
+
+    /// <summary>
+    /// An amount as a decimal, digit for digit: a JSON number (12.5), a numeric string
+    /// ("12.50") or a number already read. A double is read through its shortest
+    /// round-trip form, so 12.1 stays 12.1.
+    /// </summary>
+    public static bool TryGetDecimal(object? value, out decimal result)
+    {
+        result = 0;
+        switch (value)
+        {
+            case decimal m:
+                result = m;
+                return true;
+            case long l:
+                result = l;
+                return true;
+            case int i:
+                result = i;
+                return true;
+            case double d when double.IsFinite(d):
+                return decimal.TryParse(d.ToString("R", CultureInfo.InvariantCulture), NumberStyles.Float, CultureInfo.InvariantCulture, out result);
+            case string s:
+                return decimal.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
+            case JsonElement { ValueKind: JsonValueKind.Number } el:
+                return el.TryGetDecimal(out result);
+            case JsonElement { ValueKind: JsonValueKind.String } el:
+                return decimal.TryParse(el.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out result);
+            default:
+                return false;
+        }
+    }
+
+    /// <summary>An amount without its decimals, truncated toward zero; 0 when it does not fit a long.</summary>
+    public static long WholeUnits(decimal amount)
+        => amount >= long.MinValue && amount <= long.MaxValue ? (long)amount : 0;
 
     public static bool TryGetBool(object? value, out bool result)
     {

@@ -32,7 +32,7 @@ public class CrudService
         string id,
         CancellationToken cancellationToken = default)
     {
-        var response = await Base.GetAsync($"/{_path}/{id}", cancellationToken: cancellationToken);
+        var response = await Base.GetAsync($"/{_path}/{PathSegment.Id(id)}", cancellationToken: cancellationToken);
         return JsonUtils.PickResource(response, _singular);
     }
 
@@ -49,7 +49,7 @@ public class CrudService
         RequestOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        var response = await Base.PutAsync($"/{_path}/{id}", parameters, options, cancellationToken);
+        var response = await Base.PutAsync($"/{_path}/{PathSegment.Id(id)}", parameters, options, cancellationToken);
         return JsonUtils.PickResource(response, _singular);
     }
 
@@ -58,6 +58,6 @@ public class CrudService
         RequestOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        await Base.DeleteAsync($"/{_path}/{id}", options, cancellationToken);
+        await Base.DeleteAsync($"/{_path}/{PathSegment.Id(id)}", options, cancellationToken);
     }
 }

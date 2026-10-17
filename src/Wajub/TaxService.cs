@@ -60,7 +60,7 @@ public class TaxService
 
     public async Task<Dictionary<string, object?>> RetrieveCodeAsync(string code, CancellationToken cancellationToken = default)
     {
-        var response = await Base.GetAsync($"/tax/codes/{code}", cancellationToken: cancellationToken);
+        var response = await Base.GetAsync($"/tax/codes/{PathSegment.Id(code)}", cancellationToken: cancellationToken);
         return JsonUtils.PickResource(response, "tax_code", "code");
     }
 
@@ -80,7 +80,7 @@ public class TaxService
 
     public async Task<Dictionary<string, object?>> RetrieveRegistrationAsync(string id, CancellationToken cancellationToken = default)
     {
-        var response = await Base.GetAsync($"/tax/registrations/{id}", cancellationToken: cancellationToken);
+        var response = await Base.GetAsync($"/tax/registrations/{PathSegment.Id(id)}", cancellationToken: cancellationToken);
         return JsonUtils.PickResource(response, "registration", "tax_registration");
     }
 
@@ -90,7 +90,7 @@ public class TaxService
         RequestOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        var response = await Base.PutAsync($"/tax/registrations/{id}", parameters, options, cancellationToken);
+        var response = await Base.PutAsync($"/tax/registrations/{PathSegment.Id(id)}", parameters, options, cancellationToken);
         return JsonUtils.PickResource(response, "registration", "tax_registration");
     }
 
@@ -99,7 +99,7 @@ public class TaxService
         RequestOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        await Base.DeleteAsync($"/tax/registrations/{id}", options, cancellationToken);
+        await Base.DeleteAsync($"/tax/registrations/{PathSegment.Id(id)}", options, cancellationToken);
     }
 
     public async Task<(List<Dictionary<string, object?>> Data, Dictionary<string, object?>? Meta)> JurisdictionsAsync(

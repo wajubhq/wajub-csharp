@@ -38,6 +38,7 @@ public class WajubClient : IDisposable
 
     public ShieldService Shield { get; }
 
+    [Obsolete(ListenService.Retired)]
     public ListenService Listen { get; }
 
     public Webhooks Webhooks { get; }
@@ -80,7 +81,9 @@ public class WajubClient : IDisposable
         Identity = identity;
         Tax = tax;
         Shield = shield;
+#pragma warning disable CS0618 // Kept, obsolete, working as before.
         Listen = listen;
+#pragma warning restore CS0618
         Webhooks = webhooks;
     }
 

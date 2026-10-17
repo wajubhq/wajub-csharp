@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
+using System.Text.Json;
 
 namespace Wajub.Tests;
 
@@ -59,7 +60,7 @@ public class ClientTests
         var client = TestFixtures.CreateWajubClient(httpClient);
         await client.Payments.CreateAsync(new Dictionary<string, object?> { ["amount"] = 1000 });
 
-        Assert.StartsWith("wajub-", recorded.IdempotencyKey);
+        Assert.StartsWith("wajub-", Assert.Single(Assert.Single(recorded.IdempotencyKeyValues)));
     }
 
     [Fact]
@@ -74,8 +75,118 @@ public class ClientTests
             new Dictionary<string, object?> { ["amount"] = 1000 },
             new RequestOptions { IdempotencyKey = "custom-key-123", Sync = "acct_sync_ref" });
 
-        Assert.Equal("custom-key-123", recorded.IdempotencyKey);
+        Assert.Equal(["custom-key-123"], Assert.Single(recorded.IdempotencyKeyValues));
         Assert.Equal("acct_sync_ref", recorded.Sync);
+    }
+
+    [Theory]
+    [InlineData("Idempotency-Key")]
+    [InlineData("idempotency-key")]
+    [InlineData("IDEMPOTENCY-KEY")]
+    public async Task HttpPost_SendsOnlyTheIdempotencyKeyOfTheHeaders(string header)
+    {
+        var (httpClient, recorded) = TestFixtures.CreateTestClient([
+            _ => (503, new Dictionary<string, object?> { ["message"] = "Unavailable" }),
+            _ => (200, new Dictionary<string, object?> { ["transaction"] = new Dictionary<string, object?> { ["id"] = "pay_1" } }),
+        ]);
+
+        var client = TestFixtures.CreateWajubClient(httpClient);
+        await client.Payments.CreateAsync(
+            new Dictionary<string, object?> { ["amount"] = 1000 },
+            new RequestOptions { Headers = new Dictionary<string, string> { [header] = "order-42" } });
+
+        Assert.Equal(2, recorded.IdempotencyKeyValues.Count);
+        Assert.All(recorded.IdempotencyKeyValues, keys => Assert.Equal(["order-42"], keys));
+    }
+
+    [Fact]
+    public async Task HttpPost_RefusesTwoDifferentIdempotencyKeys()
+    {
+        var (httpClient, recorded) = TestFixtures.CreateTestClient([]);
+
+        var client = TestFixtures.CreateWajubClient(httpClient);
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() => client.Payments.CreateAsync(
+            new Dictionary<string, object?> { ["amount"] = 1000 },
+            new RequestOptions
+            {
+                IdempotencyKey = "order-42",
+                Headers = new Dictionary<string, string> { ["idempotency-key"] = "order-43" },
+            }));
+
+        Assert.Equal("options", ex.ParamName);
+        Assert.Empty(recorded.IdempotencyKeyValues);
+    }
+
+    [Theory]
+    [InlineData(" ", null, null)]
+    [InlineData(null, " ", null)]
+    [InlineData("\t", "", null)]
+    [InlineData(" ", "order-42", "order-42")]
+    [InlineData("order-42", " ", "order-42")]
+    public async Task HttpPost_ABlankIdempotencyKeyCountsAsNone(string? option, string? header, string? sent)
+    {
+        var (httpClient, recorded) = TestFixtures.CreateTestClient([
+            _ => (200, new Dictionary<string, object?> { ["transaction"] = new Dictionary<string, object?> { ["id"] = "pay_1" } }),
+        ]);
+
+        var client = TestFixtures.CreateWajubClient(httpClient);
+        await client.Payments.CreateAsync(
+            new Dictionary<string, object?> { ["amount"] = 1000 },
+            new RequestOptions
+            {
+                IdempotencyKey = option,
+                Headers = header is null ? null : new Dictionary<string, string> { ["Idempotency-Key"] = header },
+            });
+
+        var key = Assert.Single(Assert.Single(recorded.IdempotencyKeyValues));
+        if (sent is null)
+        {
+            Assert.StartsWith("wajub-", key);
+        }
+        else
+        {
+            Assert.Equal(sent, key);
+        }
+    }
+
+    [Fact]
+    public async Task HttpPost_RefusesTwoIdempotencyKeyHeadersThatDifferOnlyInCase()
+    {
+        var (httpClient, recorded) = TestFixtures.CreateTestClient([]);
+
+        var client = TestFixtures.CreateWajubClient(httpClient);
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() => client.Payments.CreateAsync(
+            new Dictionary<string, object?> { ["amount"] = 1000 },
+            new RequestOptions
+            {
+                Headers = new Dictionary<string, string>
+                {
+                    ["Idempotency-Key"] = "order-42",
+                    ["idempotency-key"] = "order-43",
+                },
+            }));
+
+        Assert.Equal("options", ex.ParamName);
+        Assert.Empty(recorded.IdempotencyKeyValues);
+    }
+
+    [Fact]
+    public async Task HttpPost_SendsTheSameIdempotencyKeyOnceWhenGivenTwice()
+    {
+        var (httpClient, recorded) = TestFixtures.CreateTestClient([
+            _ => (200, new Dictionary<string, object?> { ["transaction"] = new Dictionary<string, object?> { ["id"] = "pay_1" } }),
+        ]);
+
+        var client = TestFixtures.CreateWajubClient(httpClient);
+        await client.Payments.CreateAsync(
+            new Dictionary<string, object?> { ["amount"] = 1000 },
+            new RequestOptions
+            {
+                IdempotencyKey = "order-42",
+                Headers = new Dictionary<string, string> { ["Idempotency-Key"] = "order-42" },
+            });
+
+        Assert.Equal(["order-42"], Assert.Single(recorded.IdempotencyKeyValues));
     }
 
     [Fact]
@@ -88,7 +199,7 @@ public class ClientTests
         var client = TestFixtures.CreateWajubClient(httpClient);
         await client.Payments.ListAsync();
 
-        Assert.Equal(string.Empty, recorded.IdempotencyKey);
+        Assert.Empty(Assert.Single(recorded.IdempotencyKeyValues));
     }
 
     [Fact]
@@ -165,16 +276,25 @@ public class ClientTests
         var (httpClient, recorded) = TestFixtures.CreateTestClient([
             _ => (200, new Dictionary<string, object?> { ["refund"] = new Dictionary<string, object?> { ["id"] = "ref_new" } }),
             _ => (200, new Dictionary<string, object?> { ["refund"] = new Dictionary<string, object?> { ["id"] = "ref_new", ["status"] = "pending" } }),
-            _ => (200, new Dictionary<string, object?>()),
+            _ => (200, new Dictionary<string, object?>
+            {
+                ["refunds"] = new[] { new Dictionary<string, object?> { ["id"] = "ref_new" } },
+                ["meta"] = new Dictionary<string, object?> { ["has_more"] = false },
+            }),
         ]);
 
         var client = TestFixtures.CreateWajubClient(httpClient);
 
         var created = await client.Refunds.CreateAsync(new Dictionary<string, object?>
         {
-            ["payment_id"] = "pay_1",
+            ["payment"] = "pay_1",
             ["amount"] = 500,
         });
+        using (var sent = JsonDocument.Parse(recorded.Bodies.Single()))
+        {
+            Assert.Equal("pay_1", sent.RootElement.GetProperty("payment").GetString());
+        }
+
         var refund = Refund.Parse(new Dictionary<string, object?> { ["refund"] = created });
         Assert.Equal("ref_new", refund.Id);
 
@@ -182,8 +302,38 @@ public class ClientTests
         var parsed = Refund.Parse(new Dictionary<string, object?> { ["refund"] = retrieved });
         Assert.Equal("pending", parsed.Status);
 
-        await client.Refunds.DeleteAsync("ref_new");
+        var listed = await client.Refunds.ListAsync();
+        Assert.Equal(HttpMethod.Get.Method, recorded.Method);
+        Assert.Equal("/refunds", recorded.Path);
+        Assert.Equal("ref_new", JsonUtils.ToStringValue(Assert.Single(listed.Data)["id"]));
+    }
+
+    [Fact]
+    public async Task LinksUpdateAndDelete()
+    {
+        var (httpClient, recorded) = TestFixtures.CreateTestClient([
+            _ => (200, new Dictionary<string, object?> { ["link"] = new Dictionary<string, object?> { ["id"] = "lnk_1", ["amount"] = 2500 } }),
+            _ => (200, new Dictionary<string, object?>()),
+        ]);
+
+        var client = TestFixtures.CreateWajubClient(httpClient);
+
+        var updated = await client.Links.UpdateAsync("lnk_1", new Dictionary<string, object?> { ["amount"] = 2500 });
+        Assert.Equal(HttpMethod.Put.Method, recorded.Method);
+        Assert.Equal("/links/lnk_1", recorded.Path);
+        using (var sent = JsonDocument.Parse(Assert.Single(recorded.Bodies)))
+        {
+            Assert.Equal(2500, sent.RootElement.GetProperty("amount").GetInt32());
+        }
+
+        Assert.Single(recorded.IdempotencyKeyValues[0]);
+        Assert.Equal("lnk_1", JsonUtils.ToStringValue(updated["id"]));
+
+        await client.Links.DeleteAsync("lnk_1");
         Assert.Equal(HttpMethod.Delete.Method, recorded.Method);
+        Assert.Equal("/links/lnk_1", recorded.Path);
+        // No body: the update's is still the only one.
+        Assert.Single(recorded.Bodies);
     }
 
     [Fact]
@@ -214,7 +364,8 @@ public class ClientTests
 
         Assert.Equal(3, recorded.IdempotencyKeyAttempts.Count);
         Assert.All(recorded.IdempotencyKeyAttempts, key => Assert.False(string.IsNullOrEmpty(key)));
-        Assert.Equal(1, recorded.IdempotencyKeyAttempts.Distinct().Count());
+        Assert.Single(recorded.IdempotencyKeyAttempts.Distinct());
+        Assert.All(recorded.IdempotencyKeyValues, keys => Assert.Single(keys));
     }
 
     [Fact]
@@ -317,5 +468,74 @@ public class ClientTests
         Assert.Equal("validation_error", invalid.Code);
         Assert.Equal(422, invalid.HttpStatus);
         Assert.Equal("Must be positive", invalid.Errors?["amount"]);
+    }
+
+    [Fact]
+    public async Task InvalidRequestError_KeepsEveryMessageOfAField()
+    {
+        var (httpClient, _) = TestFixtures.CreateTestClient([
+            _ => (422, new Dictionary<string, object?>
+            {
+                ["message"] = "The given data was invalid.",
+                ["errors"] = new Dictionary<string, object?>
+                {
+                    ["amount"] = new[] { "The amount must be a number.", "The amount must be at least 1." },
+                    ["currency"] = new[] { "The currency field is required." },
+                    ["email"] = "The email is not valid.",
+                },
+            }),
+        ]);
+
+        var client = TestFixtures.CreateWajubClient(httpClient);
+        var ex = await Assert.ThrowsAsync<InvalidRequestError>(() =>
+            client.Payments.CreateAsync(new Dictionary<string, object?> { ["amount"] = "x" }));
+
+        Assert.NotNull(ex.FieldErrors);
+        Assert.Equal(["The amount must be a number.", "The amount must be at least 1."], ex.FieldErrors["amount"]);
+        Assert.Equal(["The currency field is required."], ex.FieldErrors["currency"]);
+        Assert.Equal(["The email is not valid."], ex.FieldErrors["email"]);
+
+        // Errors keeps the first message of each field, as before.
+        Assert.Equal("The amount must be a number.", ex.Errors?["amount"]);
+        Assert.Equal("The currency field is required.", ex.Errors?["currency"]);
+        Assert.Equal("The email is not valid.", ex.Errors?["email"]);
+    }
+
+    [Fact]
+    public async Task FieldErrors_NullMessagesAreAnEmptyList()
+    {
+        var (httpClient, _) = TestFixtures.CreateTestClient([
+            _ => (422, new Dictionary<string, object?>
+            {
+                ["message"] = "The given data was invalid.",
+                ["errors"] = new Dictionary<string, object?> { ["email"] = null },
+            }),
+        ]);
+
+        var client = TestFixtures.CreateWajubClient(httpClient);
+        var ex = await Assert.ThrowsAsync<InvalidRequestError>(() =>
+            client.Payments.CreateAsync(new Dictionary<string, object?> { ["amount"] = 1 }));
+
+        Assert.NotNull(ex.FieldErrors);
+        Assert.Empty(ex.FieldErrors["email"]);
+        Assert.Equal(string.Empty, ex.Errors?["email"]);
+    }
+
+    [Fact]
+    public void ErrorFromResponse_FieldErrorsOnEveryErrorType()
+    {
+        var body = new Dictionary<string, object?>
+        {
+            ["errors"] = new Dictionary<string, object?> { ["key"] = new[] { "First.", "Second." } },
+        };
+
+        foreach (var status in new[] { 400, 401, 403, 404, 422, 429, 500 })
+        {
+            var error = ErrorFactory.FromResponse(status, body, 0);
+            Assert.Equal(["First.", "Second."], error.FieldErrors?["key"]);
+            Assert.Equal("First.", error.Errors?["key"]);
+        }
+
+        Assert.Null(ErrorFactory.FromResponse(422, new Dictionary<string, object?> { ["message"] = "No fields" }, 0).FieldErrors);
     }
 }
