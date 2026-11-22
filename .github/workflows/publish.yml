@@ -1,0 +1,37 @@
+# Publishes the Wajub package to NuGet when a tag vX.Y.Z is pushed, through
+# NuGet trusted publishing (GitHub's OIDC token exchanged for a short-lived
+# key): no API key is stored. One-time setup on nuget.org → Trusted Publishing
+# → GitHub: owner wajubhq, repository wajub-csharp, workflow publish.yml,
+# environment nuget; then the repository secret NUGET_USER = the nuget.org
+# account name that owns the package.
+name: Publish to NuGet
+
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: nuget
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Tag matches Wajub.csproj
+        run: |
+          version=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' src/Wajub/Wajub.csproj)
+          test "v$version" = "$GITHUB_REF_NAME" || { echo "Wajub.csproj says $version, tag is $GITHUB_REF_NAME"; exit 1; }
+      # The same checks as CI before anything is released.
+      - run: dotnet build -c Release -warnaserror
+      - run: dotnet test -c Release --no-build
+      - run: dotnet pack src/Wajub/Wajub.csproj -c Release --no-build -o out
+      - uses: NuGet/login@v1
+        id: login
+        with:
+          user: ${{ secrets.NUGET_USER }}
+      - run: dotnet nuget push "out/*.nupkg" --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
